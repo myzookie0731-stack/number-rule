@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수의 규칙 탐정단</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 1학년 아이에게 말 거는 밝고 다정한 만화책
+   IDEA: 굵은 먹선 4컷 만화 한 장과, 그 아래 수 카드 줄·규칙 문장 카드
+   PICTURE: 화면 절반을 차지하는 4컷 만화(직접 그린 다람쥐·토끼·개구리)
+   COLOUR and TYPE: 해바라기 노랑 바탕, 먹선 검정, 토마토 빨강 강조, 하늘 파랑 보조 / Jua
+   LAYOUT: 만화 → 수 줄 → 문장 → 보기 카드 → 확인, 한 줄로 쌓기 */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffe36e,#23212b);--dot:light-dark(#f7cf3d,#2e2b38);
+--card:light-dark(#fffdf5,#33303d);--ink:light-dark(#222,#f5f1e6);--line:#222;
+--red:#ff5a3c;--blue:#3a7bd5;--green:#2fa35b;--soft:light-dark(#fff3b8,#47424f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg) radial-gradient(var(--dot) 2px,transparent 2.5px) 0 0/16px 16px;color:var(--ink);font:18px/1.5 Jua,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;overflow-x:clip;min-height:100vh;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:720px;margin:0 auto;padding:16px max(3vw,12px) 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+h1{margin:0;font-size:clamp(28px,6vw,40px);line-height:1.05;font-weight:400;text-shadow:2px 2px 0 light-dark(#fff,#000)}
+.home{font:18px Jua,sans-serif;border:3px solid var(--line);border-radius:999px;background:#fff;color:#222;padding:4px 16px;min-height:44px;cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dots i{width:16px;height:16px;border-radius:50%;border:3px solid var(--line);background:#fff}
+.dots i.on{background:var(--red)}.dots i.done{background:var(--green)}
+.sheet{background:var(--card);border:4px solid var(--line);border-radius:18px;box-shadow:6px 6px 0 var(--line);padding:14px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.stage{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:2px 14px;font-size:16px}
+.type{display:inline-block;border:2px solid var(--line);border-radius:999px;padding:0 12px;font-size:16px;background:#ffd84d;color:#222}
+.type.a{background:#e6dcff}
+.title{font-size:24px;margin:6px 0 10px}
+.comic{width:100%;height:auto;display:block}
+.ask{margin:16px 0 8px;font-size:20px;text-align:center}
+.row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cell small{font-size:14px;opacity:.75;min-height:20px}
+.box{width:58px;height:58px;border:3px solid var(--line);border-radius:12px;display:grid;place-items:center;font:26px Jua,sans-serif;background:#fff;color:#222}
+button.box{cursor:pointer;background:var(--soft);color:var(--ink);border-style:dashed}
+.sel{border-style:solid!important;border-color:var(--red)!important;box-shadow:0 0 0 4px #ff5a3c55}
+.ok{background:#c9f2d6!important;color:#14532d!important;border-style:solid!important;border-color:var(--green)!important}
+.bad{background:#ffd4cc!important;color:#7f1d1d!important;border-style:solid!important;border-color:var(--red)!important;animation:shake .4s}
+.sent{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 6px;margin:12px auto 0;font-size:22px;background:var(--soft);border:3px solid var(--line);border-radius:16px;padding:12px;max-width:600px}
+.slot{min-width:70px;height:52px;padding:0 10px;border:3px dashed var(--line);border-radius:10px;background:#fff;color:#222;font:22px Jua,sans-serif;cursor:pointer;line-height:1}
+.slot small{display:block;font-size:11px;color:#888;margin-bottom:2px}
+.bank{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:14px auto 0;max-width:600px}
+.bank b{flex-basis:100%;text-align:center;font-size:16px;font-weight:400;opacity:.75}
+.chip{font:24px Jua,sans-serif;min-height:52px;min-width:64px;padding:0 14px;border:3px solid var(--line);border-radius:999px;background:#fff;color:#222;cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.chip:active,.go:active,.home:active{transform:translateY(3px);box-shadow:0 0 0 var(--line)}
+.chip.n{background:#dbe9ff}.chip.w{background:#ffe7c2}.chip.c{background:#e6dcff}
+.go{display:block;margin:16px auto 0;padding:0 40px;min-height:56px;border:3px solid var(--line);border-radius:14px;background:var(--red);color:#fff;font:26px Jua,sans-serif;cursor:pointer;box-shadow:0 4px 0 var(--line)}
+.go:disabled{opacity:.45;cursor:default}
+button:focus-visible{outline:4px solid var(--blue);outline-offset:2px}
+.hint{display:none;margin:14px auto 0;max-width:560px;background:#fff;color:#222;border:3px solid var(--line);border-radius:16px;padding:10px 14px;font-size:18px}
+.hint.show{display:block}
+.hint::before{content:"힌트";background:var(--blue);color:#fff;border-radius:8px;padding:0 8px;margin-right:8px;font-size:15px}
+.yay{display:none;text-align:center;margin-top:16px;font-size:26px;color:var(--green)}
+.yay.show{display:block}
+.alt{font-size:19px;color:var(--ink);margin-top:4px}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px}
+.st{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:center;text-align:left;font:inherit;color:#222;background:#fff;border:4px solid var(--line);border-radius:18px;box-shadow:5px 5px 0 var(--line);padding:10px 14px;cursor:pointer}
+.st svg{width:84px;height:84px}
+.st h2{margin:0;font-size:21px;font-weight:400;line-height:1.2}
+.st p{margin:2px 0 4px;font-size:15px;color:#555;line-height:1.35}
+.st .stars{font-size:15px;color:#b45309}
+.lead{font-size:19px;margin:0 0 14px}
+.note{font-size:14px;opacity:.75;text-align:center;margin-top:18px}
+.namebox{text-align:center;max-width:460px;margin:20px auto}
+.namebox h2{font-weight:400;font-size:28px;margin:8px 0 12px}
+#nameIn{font:28px Jua,sans-serif;width:100%;max-width:320px;text-align:center;border:3px solid var(--line);border-radius:14px;padding:10px;background:#fff;color:#222}
+#nameIn.bad{animation:shake .4s}
+.link{font:inherit;font-size:15px;background:none;border:0;color:var(--blue);text-decoration:underline;cursor:pointer;padding:6px}
+.th{font-weight:400;font-size:28px;margin:0}.th3{font-weight:400;font-size:21px;margin:22px 0 8px}.th3 small{font-size:14px;opacity:.7;margin-left:6px}
+.live{font-size:15px;opacity:.85}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px;margin-top:12px}
+.kpi{border:3px solid var(--line);border-radius:14px;padding:8px 12px;background:#fff;color:#222}
+.kpi b{display:block;font-size:30px;font-weight:400;line-height:1.1}.kpi span{font-size:14px;color:#555}
+.bars{margin-top:14px;display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:10.5em minmax(0,1fr) 3em;gap:8px;align-items:center;font-size:16px}
+.bar i{display:block;height:18px;border-radius:9px;background:var(--red);min-width:2px}
+.bar em{font-style:normal;text-align:right}
+details.stu{border:3px solid var(--line);border-radius:14px;background:#fff;color:#222;margin-bottom:8px}
+details.stu summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 12px;min-height:48px}
+details.stu summary::-webkit-details-marker{display:none}
+.nm{font-size:20px}.nm i{display:inline-block;width:10px;height:10px;border-radius:50%;background:#bbb;margin-right:6px}.nm i.on{background:var(--green)}
+.pr{display:flex;gap:4px;flex-wrap:wrap}.pr span{font-size:13px;border:2px solid #222;border-radius:6px;padding:0 5px;background:#f3f3f3}.pr span.full{background:#c9f2d6}
+.wc{font-size:15px;color:#b42318;white-space:nowrap}
+.wl{margin:0;padding:4px 12px 12px;list-style:none;display:grid;gap:6px;border-top:2px dashed #ccc}
+.wl li{font-size:16px;line-height:1.4}.wl small{color:#666}
+.tag{display:inline-block;font-size:13px;border-radius:6px;padding:0 6px;margin-left:4px;background:#ffd4cc;color:#7f1d1d}
+@media(max-width:600px){details.stu summary{grid-template-columns:minmax(0,1fr) auto}.pr{grid-column:1/-1;order:3}}
+.fx{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.fx span{position:absolute;top:-20px;width:12px;height:16px;border-radius:3px;animation:fall 1.6s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media(prefers-reduced-motion:reduce){.fx{display:none}.bad{animation:none}}
+@media(max-width:600px){.box{width:48px;height:48px;font-size:22px}.slot{min-width:60px}.chip{min-width:56px;font-size:22px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<clipPath id="pc"><rect width="250" height="200" rx="6"/></clipPath>
+<marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10Z" fill="#ff5a3c"/></marker>
+<g id="sq" stroke="#222" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M8,-12 C58,-8 64,-62 38,-84 C22,-96 4,-84 14,-68 C24,-58 30,-42 14,-32 Z" fill="#c9813f"/>
+ <ellipse cx="-6" cy="-28" rx="22" ry="26" fill="#d98b45"/>
+ <ellipse cx="-9" cy="-24" rx="12" ry="16" fill="#f6d7aa" stroke="none"/>
+ <path d="M-26,-74 L-24,-94 L-13,-80Z M-3,-80 L4,-97 L9,-76Z" fill="#d98b45"/>
+ <circle cx="-8" cy="-62" r="21" fill="#d98b45"/>
+ <circle cx="-15" cy="-64" r="3.2" fill="#222" stroke="none"/><circle cx="-1" cy="-64" r="3.2" fill="#222" stroke="none"/>
+ <circle cx="-14" cy="-65.5" r="1" fill="#fff" stroke="none"/><circle cx="0" cy="-65.5" r="1" fill="#fff" stroke="none"/>
+ <circle cx="-8" cy="-57" r="2.6" fill="#5a3a20" stroke="none"/>
+ <circle cx="-21" cy="-55" r="4" fill="#f49a90" stroke="none" opacity=".8"/><circle cx="5" cy="-55" r="4" fill="#f49a90" stroke="none" opacity=".8"/>
+ <ellipse cx="-16" cy="-2" rx="9" ry="4.5" fill="#c9813f"/><ellipse cx="4" cy="-2" rx="9" ry="4.5" fill="#c9813f"/>
+</g>
+<g id="rb" stroke="#222" stroke-width="2.5" stroke-linejoin="round">
+ <ellipse cx="-9" cy="-90" rx="7" ry="22" fill="#fff"/><ellipse cx="9" cy="-90" rx="7" ry="22" fill="#fff"/>
+ <ellipse cx="-9" cy="-90" rx="3" ry="14" fill="#ffb3c1" stroke="none"/><ellipse cx="9" cy="-90" rx="3" ry="14" fill="#ffb3c1" stroke="none"/>
+ <ellipse cx="0" cy="-24" rx="20" ry="24" fill="#fff"/>
+ <circle cx="0" cy="-58" r="20" fill="#fff"/>
+ <circle cx="-7" cy="-60" r="3" fill="#222" stroke="none"/><circle cx="7" cy="-60" r="3" fill="#222" stroke="none"/>
+ <path d="M-3,-53 L3,-53 L0,-50Z" fill="#ff8fa3" stroke="none"/>
+ <path d="M0,-50 q-3,4 -6,2 M0,-50 q3,4 6,2" fill="none" stroke-width="1.8"/>
+ <circle cx="-13" cy="-52" r="3.6" fill="#ffb3c1" stroke="none"/><circle cx="13" cy="-52" r="3.6" fill="#ffb3c1" stroke="none"/>
+ <ellipse cx="-10" cy="-2" rx="9" ry="4.5" fill="#fff"/><ellipse cx="10" cy="-2" rx="9" ry="4.5" fill="#fff"/>
+</g>
+<g id="fg" stroke="#222" stroke-width="2.5" stroke-linejoin="round">
+ <ellipse cx="0" cy="-20" rx="27" ry="20" fill="#5cbf5a"/>
+ <ellipse cx="0" cy="-14" rx="15" ry="10" fill="#c9eec0" stroke="none"/>
+ <circle cx="-13" cy="-40" r="10" fill="#5cbf5a"/><circle cx="13" cy="-40" r="10" fill="#5cbf5a"/>
+ <circle cx="-13" cy="-41" r="6" fill="#fff" stroke="none"/><circle cx="13" cy="-41" r="6" fill="#fff" stroke="none"/>
+ <circle cx="-12" cy="-41" r="3" fill="#222" stroke="none"/><circle cx="12" cy="-41" r="3" fill="#222" stroke="none"/>
+ <path d="M-10,-27 Q0,-20 10,-27" fill="none"/>
+ <circle cx="-19" cy="-26" r="3.4" fill="#ff9e9e" stroke="none" opacity=".8"/><circle cx="19" cy="-26" r="3.4" fill="#ff9e9e" stroke="none" opacity=".8"/>
+</g>
+<g id="ac" stroke="#222" stroke-width="2">
+ <ellipse cx="0" cy="4" rx="10" ry="12" fill="#c98b4a"/>
+ <path d="M-12,-2 Q0,-14 12,-2 Q0,2 -12,-2Z" fill="#7a4b25"/>
+ <path d="M0,-9 L2,-15" fill="none"/>
+</g>
+</defs>
+</svg>
+
+<div class="wrap">
+ <header>
+  <h1>수의 규칙 탐정단</h1>
+  <div class="dots" id="dots" aria-label="문제 진행"></div>
+  <button class="home" id="home" type="button" hidden>단계 고르기</button>
+ </header>
+
+ <section id="nameView" hidden>
+  <div class="sheet namebox">
+   <svg viewBox="0 0 300 120" aria-hidden="true" style="width:min(100%,320px);display:block;margin:0 auto">
+    <use href="#sq" transform="translate(70,112)"/><use href="#rb" transform="translate(150,112) scale(.85)"/><use href="#fg" transform="translate(230,112) scale(1.3)"/>
+   </svg>
+   <h2>탐정 이름을 써 주세요</h2>
+   <form id="nameForm"><input id="nameIn" maxlength="10" autocomplete="off" placeholder="내 이름" aria-label="내 이름">
+   <button class="go" type="submit">시작하기</button></form>
+  </div>
+ </section>
+
+ <section id="menuView" hidden>
+  <p class="lead"><b id="who"></b> 탐정님, 만화 속 친구들이 숨겨 둔 수의 규칙을 찾아볼까요? 단계를 골라 보세요. <button class="link" id="rename" type="button">이름 바꾸기</button></p>
+  <div class="menu" id="menu"></div>
+  <p class="note">단계마다 8문제: 규칙대로 수 쓰기 4문제, 규칙 찾아 쓰기 4문제가 번갈아 나옵니다.</p>
+ </section>
+
+ <main class="sheet" id="playView" hidden>
+  <div class="top"><span class="stage" id="stage"></span><span class="type" id="type"></span></div>
+  <div class="title" id="title"></div>
+  <div id="comic"></div>
+  <p class="ask" id="ask"></p>
+  <div class="row" id="row"></div>
+  <div class="sent" id="sent" hidden></div>
+  <div class="bank" id="bank"></div>
+  <button class="go" id="go" type="button">확인</button>
+  <div class="hint" id="hint"></div>
+  <div class="yay" id="yay"></div>
+ </main>
+
+ <section class="sheet" id="teacherView" hidden>
+  <div class="top"><h2 class="th">선생님 화면</h2><span class="live" id="tStat">불러오는 중…</span></div>
+  <div id="tSum"></div>
+  <h3 class="th3">학생별 기록 <small>이름을 누르면 틀린 답이 펼쳐집니다</small></h3>
+  <div id="tList"></div>
+  <button class="home" id="tReset" type="button" style="margin-top:18px">기록 모두 지우기</button>
+ </section>
+</div>
+<div class="fx" id="fx"></div>
+
+<script>
+{
+/* ---------- 그림 도구 ---------- */
+const P=(i,body)=>{const x=i%2?265:5,y=i<2?5:215;
+ return `<g transform="translate(${x},${y})"><rect width="250" height="200" rx="6" fill="#fff"/><g clip-path="url(#pc)">${body}</g><rect width="250" height="200" rx="6" fill="none" stroke="#222" stroke-width="4"/></g>`};
+const len=s=>[...String(s)].reduce((a,ch)=>a+(/[0-9!?,. ]/.test(ch)?9:16.5),0);
+const cap=t=>`<rect x="8" y="8" width="${len(t)+18}" height="26" rx="5" fill="#ffd84d" stroke="#222" stroke-width="2"/><text x="17" y="27" font-size="16" fill="#222">${t}</text>`;
+const bub=(x,y,lines,tx,ty)=>{const w=Math.max(...lines.map(len))+30,h=lines.length*22+14;x=Math.max(6,Math.min(x,244-w));
+ let o,i;
+ if(ty>=y+h){const bx=Math.min(Math.max(tx,x+22),x+w-22);o=`${bx-9},${y+h-1} ${bx+9},${y+h-1}`;i=`${bx-7},${y+h-3} ${bx+7},${y+h-3}`}
+ else{const r=tx>x+w,sx=r?x+w:x,by=Math.min(Math.max(ty,y+16),y+h-16),e=r?-1:1;o=`${sx+e},${by-8} ${sx+e},${by+8}`;i=`${sx+3*e},${by-6} ${sx+3*e},${by+6}`}
+ return `<polygon points="${o} ${tx},${ty}" fill="#fff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="#fff" stroke="#222" stroke-width="2.5"/><polygon points="${i} ${tx},${ty}" fill="#fff"/>`+
+ lines.map((l,k)=>`<text x="${x+w/2}" y="${y+28+k*22}" font-size="17" text-anchor="middle" fill="#222">${l}</text>`).join('')};
+const use=(id,x,y,s=1,flip=false)=>`<use href="#${id}" transform="translate(${x},${y}) scale(${flip?-s:s},${s})"/>`;
+const comic=s=>`<svg class="comic" viewBox="0 0 520 420" role="img" aria-label="4컷 만화" font-family="Jua, sans-serif">${s}</svg>`;
+const grass=`<rect y="184" width="250" height="16" fill="#9ad67a"/><path d="M0,184 H250" stroke="#222" stroke-width="2"/>`;
+const DAYS=["월","화","수","목","금","토","일"];
+const lin=(s,d,n)=>Array.from({length:n},(_,k)=>s+k*d);
+
+/* 1. 다람쥐 도토리: 되풀이 */
+function T1(p){
+ const pat=p.pat,seq=Array.from({length:pat.length===2?8:9},(_,k)=>pat[k%pat.length]);
+ const plate=n=>{let s=`<ellipse cx="172" cy="176" rx="62" ry="13" fill="#f1f1f1" stroke="#222" stroke-width="2.5"/>`;const g=n>3?22:30;
+  for(let k=0;k<n;k++)s+=use('ac',172+(k-(n-1)/2)*g,160);return s};
+ const say=k=>{const v=seq[k];if(k===0)return[`도토리 ${v}개 냠!`];
+  if(pat.length===3&&k===3)return["다시 처음처럼",`${v}개부터!`];
+  if(pat.length===2&&k>=2)return[`또 ${v}개!`];return[`오늘은 ${v}개!`]};
+ const svg=[0,1,2,3].map(k=>P(k,grass+cap(DAYS[k]+"요일")+use('sq',62,186)+plate(seq[k])+bub(92,40,say(k),70,102))).join('');
+ return {svg,seq,lab:seq.map((_,k)=>DAYS[k%7]),title:"다람쥐 도리의 도토리 먹기",rep:true,
+  hintB:"만화에서 도리가 먹은 도토리 수가 어떤 순서로 바뀌는지 다시 보세요.",
+  hintA:"맨 처음부터 보아서, 같은 수들이 다시 나오기 전까지가 한 묶음이에요."}
+}
+
+/* 2. 토끼 계단: 1씩·2씩 */
+function T2(p){
+ const seq=lin(p.s,p.d,8),up=p.d>0,a=Math.abs(p.d);
+ const stairs=(cur,q)=>{const ws=up?Math.max(1,cur-1):Math.max(1,cur-3);let s='';
+  for(let k=0;k<5;k++){const n=ws+k,top=200-(k+1)*20,x=40+k*36;
+   s+=`<rect x="${x}" y="${top}" width="36" height="${(k+1)*20+4}" fill="${n===cur?'#ff9f6b':'#f2c27b'}" stroke="#222" stroke-width="2.5"/><text x="${x+18}" y="${top+16}" font-size="14" text-anchor="middle" fill="#5b3208">${q===n?'?':n}</text>`;
+   if(q===n)s+=`<text x="${x+18}" y="${top-8}" font-size="26" text-anchor="middle" fill="#ff5a3c">?</text>`}
+  const i=cur-ws,rx=40+i*36+18,ry=200-(i+1)*20;
+  return {s:s+use('rb',rx,ry,.75,!up),rx,ry}};
+ const word=a===1?"한 칸":"두 칸";
+ const txt=up?[[`${seq[0]}번 계단에서`,"출발!"],[`${word} 깡충!`,`${seq[1]}번 도착!`],["또 깡충!",`${seq[2]}번이야!`],["다음엔","몇 번일까?"]]
+            :[[`${seq[0]}번 계단에서`,"출발!"],[`${word} 내려가서`,`${seq[1]}번!`],["또 내려가서",`${seq[2]}번!`],["다음엔","몇 번일까?"]];
+ const caps=["출발","한 번 뛰고","두 번 뛰고","그다음은?"];
+ const svg=[0,1,2,3].map(k=>{const cur=seq[Math.min(k,2)],st=stairs(cur,k===3?cur+p.d:null);
+  const bx=st.rx<125?250:0;
+  return P(k,`<rect width="250" height="200" fill="#e8f4ff"/>`+st.s+cap(caps[k])+bub(bx,40,txt[k],up?st.rx+10:st.rx-10,up?st.ry-58:st.ry-46))}).join('');
+ return {svg,seq,lab:[],title:up?"토끼 깡총이의 계단 오르기":"토끼 깡총이의 계단 내려가기",d:p.d,dir:"오른",
+  hintB:`이웃한 두 수를 비교해 보세요. 깡총이는 한 번에 계단을 몇 칸씩 ${up?'올라가나요':'내려가나요'}?`}
+}
+
+/* 3. 개구리 연잎: 5씩·10씩 */
+function T3(p){
+ const seq=lin(p.s,p.d,8);
+ const pond=`<rect width="250" height="200" fill="#bfe6ff"/><path d="M20,120 q10,-6 20,0 M180,60 q10,-6 20,0 M110,190 q10,-6 20,0" stroke="#7fbfe6" stroke-width="3" fill="none"/>`;
+ const pad=(x,t)=>{const q=t==='?';return `<ellipse cx="${x}" cy="168" rx="40" ry="13" fill="#6cc46a" stroke="#222" stroke-width="2.5"/><path d="M${x},168 L${x+32},160" stroke="#222" stroke-width="2"/><rect x="${x-20}" y="179" width="40" height="19" rx="6" fill="${q?'#ffe1db':'#fff'}" stroke="#222" stroke-width="2"/><text x="${x}" y="194" font-size="15" text-anchor="middle" fill="${q?'#ff5a3c':'#222'}">${t}</text>`};
+ const svg=[
+  P(0,pond+cap("첫째")+pad(70,seq[0])+pad(190,seq[1])+use('fg',70,166)+bub(250,40,[`${seq[0]}번 연잎에서`,"출발!"],84,118)),
+  P(1,pond+cap("둘째")+pad(70,seq[0])+pad(190,seq[1])+`<path d="M70,152 Q130,30 190,152" fill="none" stroke="#222" stroke-width="2.5" stroke-dasharray="6 6"/>`+use('fg',130,108)+bub(160,44,["폴짝!"],145,64)),
+  P(2,pond+cap("셋째")+pad(70,seq[1])+pad(190,seq[2])+use('fg',190,166)+bub(40,46,[`${seq[2]}번까지`,"왔어!"],170,112)),
+  P(3,pond+cap("넷째")+pad(70,seq[2])+pad(190,'?')+use('fg',70,166)+bub(250,40,["다음 연잎은","몇 번일까?"],84,118))].join('');
+ return {svg,seq,lab:[],title:"개구리 퐁퐁이의 연잎 건너기",d:p.d,dir:"오른",
+  hintB:"연잎 번호의 십의 자리 숫자와 일의 자리 숫자가 각각 어떻게 바뀌는지 살펴보세요."}
+}
+
+/* 4. 사물함 번호(수 배열표) */
+function T4(p){
+ const step={아래:10,위:-10,오른:1,왼:-1}[p.dir],seq=lin(p.s,step,8);
+ const r0=Math.floor((p.s-1)/10),c0=(p.s-1)%10,vert=Math.abs(step)===10;
+ const R=vert?(step>0?r0:r0-2):Math.min(Math.max(r0-1,0),7);
+ const C=vert?Math.min(Math.max(c0-2,0),5):(step>0?c0:c0-4);
+ const pos=v=>{const r=Math.floor((v-1)/10)-R,c=(v-1)%10-C;return [35+c*36+17,40+r*28+13]};
+ const grid=(hl,q)=>{let s='';for(let r=0;r<3;r++)for(let c=0;c<5;c++){const v=(R+r)*10+C+c+1,on=seq.slice(0,hl).includes(v),qq=v===q;
+  s+=`<rect x="${35+c*36}" y="${40+r*28}" width="34" height="26" rx="4" fill="${on?'#ffd84d':qq?'#ffe1db':'#d6e8fa'}" stroke="#222" stroke-width="2"/><text x="${35+c*36+17}" y="${40+r*28+19}" font-size="15" text-anchor="middle" fill="${qq?'#ff5a3c':'#222'}">${qq?'?':v}</text>`}
+  if(hl>1){const [x1,y1]=pos(seq[0]),[x2,y2]=pos(seq[hl-1]);
+   s+=vert?`<line x1="230" y1="${y1}" x2="230" y2="${y2}" stroke="#ff5a3c" stroke-width="4" marker-end="url(#ah)"/>`
+          :`<line x1="${x1}" y1="128" x2="${x2}" y2="128" stroke="#ff5a3c" stroke-width="4" marker-end="url(#ah)"/>`}
+  return s};
+ const room=`<rect width="250" height="200" fill="#fdf1dc"/>`;
+ const dw=p.dir+"쪽으로";
+ const t=[["사물함 번호를","살펴보자!"],[`${dw} 한 칸`,`가면 ${seq[1]}번!`],["또 한 칸 가면",`${seq[2]}번!`],["계속 가면","몇 번일까?"]];
+ const svg=[0,1,2,3].map(k=>P(k,room+grid(k===0?1:Math.min(k+1,3),k===3?seq[3]:null)+cap(["사물함 앞","하나","둘","그다음은?"][k])+use('sq',40,194,.6)+bub(82,134,t[k],52,150))).join('');
+ return {svg,seq,lab:[],title:"사물함 번호의 비밀",d:Math.abs(step)*Math.sign(step),dir:p.dir,grid:true,
+  hintB:`사물함 표에서 ${dw} 한 칸 갈 때마다 번호가 몇씩 바뀌나요?`}
+}
+
+/* 5. 탐정 회의: 기준과 방향 */
+function T5(p){
+ const seq=p.seq,d=seq[1]-seq[0],a=Math.abs(d),up=d>0,last=seq[seq.length-1];
+ const cards=(hl,hide)=>seq.map((t,k)=>{const x=20+k*36,q=hide.includes(k);
+  return `<rect x="${x}" y="42" width="31" height="30" rx="5" fill="${k===hl?'#ffd84d':q?'#ffe1db':'#fff'}" stroke="#222" stroke-width="2.5"/><text x="${x+15.5}" y="64" font-size="${t>99?13:16}" text-anchor="middle" fill="${q?'#ff5a3c':'#222'}">${q?'?':t}</text>`}).join('');
+ const wall=`<rect width="250" height="200" fill="#fdf1dc"/><rect y="184" width="250" height="16" fill="#d9b48a"/><path d="M0,184 H250" stroke="#222" stroke-width="2"/>`;
+ const hide=p.ty==='B'?p.blank:[];
+ const svg=[
+  P(0,wall+cards(-1,hide)+cap("다람쥐 도리")+use('sq',60,186)+bub(98,84,[`${a}씩 ${up?'커지는':'작아지는'}`,"규칙이야!"],66,112)),
+  P(1,wall+cards(-1,hide)+cap("토끼 깡총이")+use('rb',196,186,.8)+bub(10,84,["어디서부터?","어느 쪽으로?"],176,118)),
+  P(2,wall+cards(seq.length-1,hide)+`<path d="M215,80 H40" stroke="#ff5a3c" stroke-width="4" fill="none" marker-end="url(#ah)"/>`+cap("개구리 퐁퐁이")+use('fg',204,186)+bub(10,96,[`${last}부터 왼쪽으로`,`${a}씩 ${up?'작아져':'커져'}!`],184,140)),
+  P(3,wall+cap("모두 함께")+use('sq',62,186,.8)+use('rb',128,186,.7)+use('fg',198,186)+bub(40,40,["기준이 되는 수와","방향을 꼭 말해요!"],128,104))].join('');
+ return {svg,seq,lab:[],title:"탐정 회의: 어디서부터, 어느 쪽으로?",d,dir:"오른",blank:p.blank,
+  hintB:`이웃한 두 수를 비교해 보세요. 오른쪽으로 갈수록 몇씩 ${up?'커지나요':'작아지나요'}?`}
+}
+
+/* ---------- 문제 목록 (5단계 × 8문제) ---------- */
+const STAGES=[
+ {name:"되풀이되는 수",desc:"같은 수들이 묶음으로 계속 되풀이돼요.",icon:'sq',T:T1,
+  list:[{ty:'B',pat:[1,2]},{ty:'A',pat:[3,1]},{ty:'B',pat:[1,2,3]},{ty:'A',pat:[2,3]},{ty:'B',pat:[3,2,1]},{ty:'A',pat:[1,1,2]},{ty:'B',pat:[2,4]},{ty:'A',pat:[1,3,5]}]},
+ {name:"1씩·2씩 변하는 수",desc:"계단을 오르내리며 1씩, 2씩 커지고 작아져요.",icon:'rb',T:T2,
+  list:[{ty:'B',s:1,d:1},{ty:'A',s:3,d:2},{ty:'B',s:2,d:2},{ty:'A',s:20,d:-1},{ty:'B',s:19,d:-2},{ty:'A',s:10,d:1},{ty:'B',s:30,d:-2},{ty:'A',s:4,d:2}]},
+ {name:"5씩·10씩 뛰어 세기",desc:"연잎을 건너며 5씩, 10씩 뛰어 세어요.",icon:'fg',T:T3,
+  list:[{ty:'B',s:5,d:5},{ty:'A',s:10,d:10},{ty:'B',s:15,d:10},{ty:'A',s:50,d:-5},{ty:'B',s:90,d:-10},{ty:'A',s:3,d:10},{ty:'B',s:25,d:5},{ty:'A',s:100,d:-10}]},
+ {name:"수 배열표의 규칙",desc:"옆으로 가면 1씩, 아래로 가면 10씩 변해요.",icon:'sq',T:T4,
+  list:[{ty:'B',s:3,dir:'아래'},{ty:'A',s:42,dir:'오른'},{ty:'B',s:85,dir:'위'},{ty:'A',s:7,dir:'아래'},{ty:'B',s:58,dir:'왼'},{ty:'A',s:91,dir:'위'},{ty:'B',s:16,dir:'아래'},{ty:'A',s:99,dir:'위'}]},
+ {name:"규칙을 바르게 말하기",desc:"어디서부터, 어느 쪽으로 변하는지 꼭 함께 말해요.",icon:'fg',T:T5,
+  list:[{ty:'B',seq:[5,7,9,11,13,15],blank:[2,3]},{ty:'A',seq:[5,7,9,11,13,15]},{ty:'B',seq:[30,25,20,15,10,5],blank:[1,3]},{ty:'A',seq:[30,25,20,15,10,5]},
+        {ty:'B',seq:[12,22,32,42,52,62],blank:[2,4]},{ty:'A',seq:[40,38,36,34,32,30]},{ty:'B',seq:[1,3,5,7,9,11],blank:[1,4]},{ty:'A',seq:[60,50,40,30,20,10]}]}];
+
+/* ---------- 상태 ---------- */
+const $=id=>document.getElementById(id);
+let si=0,pi=0,cur=null,vals={},sel=null,solved=false;
+let done={},me='',mk='';
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const save=()=>ls.set('ruleDet:'+mk,JSON.stringify(done));
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ---------- 결과 저장 (Firebase 실시간 데이터베이스) ---------- */
+const DB='https://quiz-17c55-default-rtdb.asia-southeast1.firebasedatabase.app/numberRule';
+const api=(m,path,body)=>fetch(`${DB}/${path}.json`,{method:m,cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined}).then(r=>r.ok?r.json():null).catch(()=>null);
+const VIEWS=['nameView','menuView','playView','teacherView'];
+const view=v=>{VIEWS.forEach(x=>$(x).hidden=x!==v);$('home').hidden=v!=='playView';if(v!=='playView')$('dots').innerHTML=''};
+async function enter(name){
+ me=name;mk=name.replace(/[.#$\[\]\/]/g,'_');ls.set('ruleDetName',name);
+ try{done=JSON.parse(ls.get('ruleDet:'+mk)||'{}')}catch(e){done={}}
+ menu();
+ api('PATCH',`students/${encodeURIComponent(mk)}`,{name,last:Date.now()});
+ const srv=await api('GET',`students/${encodeURIComponent(mk)}/done`);
+ if(srv&&typeof srv==='object'){Object.assign(done,srv);save();if(!$('menuView').hidden)menu()}
+}
+function logTry(ok,got,want,bad){
+ if(!mk)return;const k=encodeURIComponent(mk);
+ api('POST',`log/${k}`,{t:Date.now(),s:si,p:pi,ty:cur.ty,rep:!!cur.rep,ok,got,want,bad});
+ const u={last:Date.now(),at:`${si}-${pi}`};api('PATCH',`students/${k}`,u);
+ if(ok)api('PATCH',`students/${k}/done`,{[`${si}-${pi}`]:1});
+}
+let ac=null;
+const beep=(f,d=.15)=>{try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.type='triangle';g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}};
+const OPP={오른:'왼',왼:'오른',아래:'위',위:'아래'};
+
+function menu(){
+ view('menuView');$('who').textContent=me;
+ $('menu').innerHTML=STAGES.map((s,k)=>{const n=s.list.filter((_,j)=>done[k+'-'+j]).length;
+  const ic=s.icon==='sq'?use('sq',46,90,.85):s.icon==='rb'?use('rb',42,92,.72):use('fg',42,80,1.3);
+  return `<button class="st" type="button" data-s="${k}"><svg viewBox="0 0 84 96" aria-hidden="true"><circle cx="42" cy="52" r="38" fill="${['#ffd84d','#ffc2a8','#bfe6ff','#d6e8fa','#e6dcff'][k]}" stroke="#222" stroke-width="3"/>${ic}</svg><span><h2>${k+1}단계 · ${s.name}</h2><p>${s.desc}</p><span class="stars">${'★'.repeat(n)}${'☆'.repeat(8-n)}</span></span></button>`}).join('');
+}
+function build(){
+ const st=STAGES[si],spec=st.list[pi],q=st.T(spec);q.ty=spec.ty;
+ const n=q.seq.length;q.blank=q.blank||(spec.blank)||[n-5,n-3,n-1];
+ if(q.ty==='B'){
+  const ans=q.blank.map(k=>q.seq[k]),others=new Set(q.seq.filter((_,k)=>!q.blank.includes(k)));let pool=new Set(ans);
+  if(q.rep){for(let v=1;pool.size<6;v++)if(!pool.has(v))pool.add(v)}
+  else{const a=Math.abs(q.d);const c=[];ans.forEach(v=>c.push(v+1,v-1,v+a+1,v-a+1,v+10,v-10,v+5));
+   for(const v of c){if(pool.size>=6)break;if(v>0&&v<=110&&!others.has(v))pool.add(v)}}
+  q.bank=[...pool].sort((x,y)=>x-y).map(v=>({v,c:'n'}));
+ }else if(q.rep){
+  const pat=spec.pat;q.slots=pat.map(()=>"수");q.ans=[pat.map(String)];
+  const nums=new Set(pat);for(let v=1;nums.size<5;v++)nums.add(v);
+  q.bank=[...nums].sort((x,y)=>x-y).map(v=>({v,c:'n'}));
+ }else{
+  const a=Math.abs(q.d),up=q.d>0,f=q.seq[0],l=q.seq[n-1];
+  q.slots=["기준 수","방향","몇씩","어떻게"];
+  q.ans=[[f,q.dir,a,up?'커지는':'작아지는'].map(String),[l,OPP[q.dir],a,up?'작아지는':'커지는'].map(String)];
+  const nums=new Set([f,l,a]);[a===1?2:1,a+(a>=5?5:1)].forEach(v=>nums.add(v));
+  const dirs=q.grid?['오른','왼','위','아래']:['오른','왼'];
+  q.bank=[...[...nums].sort((x,y)=>x-y).map(v=>({v,c:'n'})),...dirs.map(v=>({v,c:'w'})),{v:'커지는',c:'c'},{v:'작아지는',c:'c'}];
+ }
+ return q;
+}
+function load(){
+ cur=build();vals={};solved=false;
+ view('playView');
+ if(mk)api('PATCH',`students/${encodeURIComponent(mk)}`,{last:Date.now(),at:`${si}-${pi}`});
+ const A=cur.ty==='A';
+ $('stage').textContent=`${si+1}단계 · ${pi+1}번`;
+ $('type').textContent=A?'규칙 찾아 쓰기':'규칙대로 수 쓰기';$('type').className='type'+(A?' a':'');
+ $('title').textContent=cur.title;$('comic').innerHTML=comic(cur.svg);
+ $('ask').textContent=A?'만화와 수를 보고, 보기에서 골라 규칙을 완성해 보세요.':'만화 속 규칙대로 빈칸에 알맞은 수를 보기에서 골라 넣어 보세요.';
+ sel=A?0:cur.blank[0];
+ $('hint').classList.remove('show');$('yay').classList.remove('show');$('go').hidden=false;
+ $('sent').hidden=!A;
+ $('bank').innerHTML='<b>보기</b>'+cur.bank.map(o=>`<button type="button" class="chip ${o.c}" data-v="${o.v}">${o.v}</button>`).join('');
+ dots();draw();window.scrollTo({top:0,behavior:'smooth'});
+}
+function dots(){$('dots').innerHTML=STAGES[si].list.map((_,k)=>`<i class="${k===pi?'on':done[si+'-'+k]?'done':''}"></i>`).join('')}
+function draw(){
+ const q=cur,A=q.ty==='A';
+ $('row').innerHTML=q.seq.map((n,k)=>{const lab=q.lab.length?`<small>${q.lab[k]}</small>`:'';
+  if(A||!q.blank.includes(k))return `<div class="cell"><div class="box">${n}</div>${lab}</div>`;
+  const v=vals[k]||{};return `<div class="cell"><button type="button" class="box ${v.st||''} ${sel===k&&!solved?'sel':''}" data-k="${k}" aria-label="빈칸">${v.v??''}</button>${lab}</div>`}).join('');
+ if(A){
+  const sl=k=>{const v=vals[k]||{};return `<button type="button" class="slot ${v.st||''} ${sel===k&&!solved?'sel':''}" data-k="${k}"><small>${q.slots[k]}</small>${v.v??''}</button>`};
+  $('sent').innerHTML=q.rep?q.slots.map((_,k)=>sl(k)+(k<q.slots.length-1?'<span>,</span>':'')).join('')+'<span>순서로 되풀이되는 규칙</span>'
+   :`${sl(0)}<span>부터</span>${sl(1)}<span>쪽으로</span>${sl(2)}<span>씩</span>${sl(3)}<span>규칙</span>`;
+ }
+ const keys=A?q.slots.map((_,k)=>k):q.blank;
+ $('go').disabled=!keys.every(k=>vals[k]&&vals[k].v!=null);
+}
+function pick(v){
+ if(solved||sel===null)return;
+ const o=vals[sel];if(o&&o.st==='ok')return;
+ vals[sel]={v};beep(560,.06);
+ const keys=cur.ty==='A'?cur.slots.map((_,k)=>k):cur.blank;
+ const nx=keys.find(k=>!vals[k]||vals[k].st==='bad');sel=nx===undefined?sel:nx;
+ draw();
+}
+function check(){
+ const q=cur;let bad=[];
+ let got,want;
+ if(q.ty==='B'){got=q.blank.map(k=>vals[k].v);want=q.blank.map(k=>q.seq[k]);q.blank.forEach((k,j)=>{const ok=+got[j]===want[j];vals[k].st=ok?'ok':'bad';if(!ok)bad.push(j)})}
+ else{got=q.slots.map((_,k)=>String(vals[k].v));
+  const t=q.ans.length>1&&got[0]===q.ans[1][0]?q.ans[1]:q.ans[0];want=t;
+  got.forEach((g,k)=>{const ok=g===t[k];vals[k].st=ok?'ok':'bad';if(!ok)bad.push(k)});q.used=t}
+ logTry(!bad.length,got,want,bad);
+ if(!bad.length)return win();
+ if(q.ty==='B')bad=bad.map(j=>q.blank[j]);
+ beep(200,.25);sel=bad[0];draw();
+ let h=q.hintB;
+ if(q.ty==='A')h=q.rep?q.hintA:["규칙을 말할 때는 어느 수부터 보는지 먼저 말해요. 맨 앞의 수나 맨 끝의 수를 찾아보세요.",
+   "기준이 되는 수에서 어느 쪽으로 가면서 수가 변하나요? 손가락으로 짚어 보세요.",
+   "이웃한 두 수의 차이를 세어 보세요.","그 방향으로 갈수록 수가 커지나요, 작아지나요?"][bad[0]];
+ $('hint').textContent=h;$('hint').classList.add('show');
+}
+function win(){
+ solved=true;done[si+'-'+pi]=1;save();draw();dots();
+ $('go').hidden=true;$('hint').classList.remove('show');confetti();beep(660);setTimeout(()=>beep(880),120);setTimeout(()=>beep(1046,.3),240);
+ const last=pi===STAGES[si].list.length-1;let alt='';
+ if(cur.ty==='A'&&cur.ans.length>1){const o=cur.ans[cur.used===cur.ans[0]?1:0];alt=`<div class="alt">"${o[0]}부터 ${o[1]}쪽으로 ${o[2]}씩 ${o[3]} 규칙"이라고 말해도 맞아요!</div>`}
+ $('yay').innerHTML=(last?`${si+1}단계를 모두 풀었어요! 멋진 탐정이에요!`:'정답! 규칙을 찾았어요!')+alt+
+  `<button class="go" id="next" type="button" style="background:var(--green)">${last?(si<STAGES.length-1?'다음 단계로':'처음 화면으로'):'다음 문제'}</button>`;
+ $('yay').classList.add('show');setTimeout(()=>$('yay').scrollIntoView({behavior:'smooth',block:'center'}),50);
+}
+function next(){
+ if(pi<STAGES[si].list.length-1){pi++;load()}
+ else if(si<STAGES.length-1){si++;pi=0;load()}
+ else{menu();window.scrollTo({top:0})}
+}
+function confetti(){
+ const c=['#ff5a3c','#3a7bd5','#2fa35b','#ffd84d','#b46cff'];
+ $('fx').innerHTML=Array.from({length:40},(_,k)=>`<span style="left:${Math.random()*100}%;background:${c[k%5]};animation-delay:${Math.random()*.5}s"></span>`).join('');
+ setTimeout(()=>$('fx').innerHTML='',2400);
+}
+
+$('menu').addEventListener('click',e=>{const b=e.target.closest('button[data-s]');if(!b)return;si=+b.dataset.s;
+ const list=STAGES[si].list;pi=Math.max(0,list.findIndex((_,j)=>!done[si+'-'+j]));load()});
+$('home').addEventListener('click',menu);
+$('bank').addEventListener('click',e=>{const b=e.target.closest('button.chip');if(!b)return;const v=b.dataset.v;pick(/^\d+$/.test(v)?+v:v)});
+$('row').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b||solved)return;sel=+b.dataset.k;draw()});
+$('sent').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b||solved)return;sel=+b.dataset.k;draw()});
+$('go').addEventListener('click',()=>{if(!$('go').disabled&&!solved)check()});
+$('yay').addEventListener('click',e=>{if(e.target.id==='next')next()});
+/* ---------- 선생님 화면 ---------- */
+const SLOTN=["기준 수","방향","몇씩","어떻게"];
+let tTimer=null,armed=0;
+const ago=t=>{const m=Math.floor((Date.now()-t)/60000);return !t?'-':m<1?'방금':m<60?`${m}분 전`:m<1440?`${Math.floor(m/60)}시간 전`:`${Math.floor(m/1440)}일 전`};
+function sentence(e){return e.ty==='B'?'':e.rep?`"${e.got.map(esc).join(', ')} 순서로 되풀이되는 규칙"`:`"${esc(e.got[0])}부터 ${esc(e.got[1])}쪽으로 ${esc(e.got[2])}씩 ${esc(e.got[3])} 규칙"`}
+function wrongLine(e){
+ const head=`<small>${e.s+1}단계 ${e.p+1}번 · ${e.ty==='A'?'규칙 찾아 쓰기':'규칙대로 수 쓰기'} · ${ago(e.t)}</small><br>`;
+ if(e.ty==='B')return head+`빈칸 정답 <b>${(e.want||[]).map(esc).join(', ')}</b> ← 고른 수 ${(e.got||[]).map((g,j)=>(e.bad||[]).includes(j)?`<span class="tag">${esc(g)}</span>`:esc(g)).join(', ')}`;
+ const tags=e.rep?'<span class="tag">묶음</span>':(e.bad||[]).map(k=>`<span class="tag">${SLOTN[k]} 틀림</span>`).join('');
+ return head+`고른 문장 ${sentence(e)}${tags}`;
+}
+async function teacher(){
+ view('teacherView');
+ const data=await api('GET','');
+ if(data===null&&!$('tList').innerHTML){$('tStat').textContent='연결 확인 중… (깃허브 주소에서 열어야 기록이 보여요)'}
+ const st=(data&&data.students)||{},lg=(data&&data.log)||{};
+ const open=new Set([...document.querySelectorAll('details.stu[open]')].map(d=>d.dataset.k));
+ const keys=Object.keys(st).sort((a,b)=>String(st[a].name).localeCompare(String(st[b].name),'ko'));
+ const now=Date.now();let slot=[0,0,0,0],rep=0,bw=0,tries=0,wrong=0;
+ const rows=keys.map(k=>{const s=st[k],L=Object.values(lg[encodeURIComponent(k)]||lg[k]||{}).sort((a,b)=>b.t-a.t),W=L.filter(e=>!e.ok);
+  tries+=L.length;wrong+=W.length;
+  W.forEach(e=>{if(e.ty==='B')bw++;else if(e.rep)rep++;else(e.bad||[]).forEach(i=>slot[i]++)});
+  const dn=s.done||{},on=now-(s.last||0)<120000;
+  const pr=STAGES.map((g,i)=>{const c=g.list.filter((_,j)=>dn[i+'-'+j]).length;return `<span class="${c===8?'full':''}">${i+1}단계 ${c}/8</span>`}).join('');
+  const at=s.at?`${+s.at.split('-')[0]+1}단계 ${+s.at.split('-')[1]+1}번`:'';
+  return `<details class="stu" data-k="${esc(k)}" ${open.has(k)?'open':''}><summary><span class="nm"><i class="${on?'on':''}"></i>${esc(s.name)} <small style="font-size:13px;color:#666">${on?esc(at)+' 푸는 중':ago(s.last)}</small></span><span class="pr">${pr}</span><span class="wc">오답 ${W.length}</span></summary>`+
+   (W.length?`<ul class="wl">${W.slice(0,30).map(e=>`<li>${wrongLine(e)}</li>`).join('')}</ul>`:`<ul class="wl"><li>아직 틀린 답이 없어요.</li></ul>`)+`</details>`});
+ const active=keys.filter(k=>now-(st[k].last||0)<120000).length;
+ const max=Math.max(1,...slot,rep,bw);
+ const bars=[["기준 수 틀림",slot[0]],["방향 틀림",slot[1]],["몇씩 틀림",slot[2]],["커지는/작아지는 틀림",slot[3]],["되풀이 묶음 틀림",rep],["빈칸 수 틀림",bw]];
+ $('tSum').innerHTML=`<div class="sum"><div class="kpi"><b>${keys.length}</b><span>들어온 학생</span></div><div class="kpi"><b>${active}</b><span>지금 푸는 학생</span></div><div class="kpi"><b>${tries}</b><span>제출한 답</span></div><div class="kpi"><b>${wrong}</b><span>틀린 답</span></div></div>`+
+  `<h3 class="th3">우리 반이 자주 틀리는 곳</h3><div class="bars">${bars.map(([n,v])=>`<div class="bar"><span>${n}</span><i style="width:${v/max*100}%"></i><em>${v}</em></div>`).join('')}</div>`;
+ $('tList').innerHTML=rows.join('')||'<p>아직 들어온 학생이 없어요. 학생들이 QR코드로 들어와 이름을 쓰면 여기에 나타납니다.</p>';
+ if(data!==null){const d=new Date();$('tStat').textContent=`● 실시간 · ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')} 새로 고침`}
+ clearTimeout(tTimer);if(location.hash==='#teacher')tTimer=setTimeout(teacher,4000);
+}
+$('tReset').addEventListener('click',async()=>{
+ if(Date.now()-armed>4000){armed=Date.now();$('tReset').textContent='정말 지울까요? 한 번 더 누르세요';setTimeout(()=>{$('tReset').textContent='기록 모두 지우기'},4000);return}
+ armed=0;$('tReset').textContent='지우는 중…';await api('DELETE','');$('tReset').textContent='기록 모두 지우기';$('tList').innerHTML='';teacher();
+});
+$('nameForm').addEventListener('submit',e=>{e.preventDefault();const n=$('nameIn').value.trim();
+ if(!n){$('nameIn').classList.remove('bad');void $('nameIn').offsetWidth;$('nameIn').classList.add('bad');$('nameIn').focus();return}enter(n)});
+$('rename').addEventListener('click',()=>{$('nameIn').value='';view('nameView');$('nameIn').focus()});
+function route(){
+ clearTimeout(tTimer);
+ if(location.hash==='#teacher')return teacher();
+ const n=ls.get('ruleDetName');if(n)enter(n);else view('nameView');
+}
+window.addEventListener('hashchange',route);
+route();window.__go=(s,p)=>{si=s;pi=p;load()};
+}
+</script>
+</body>
+</html>
