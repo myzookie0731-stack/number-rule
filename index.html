@@ -36,8 +36,8 @@ h1{margin:0;font-size:clamp(28px,6vw,40px);line-height:1.05;font-weight:400;text
 .title{font-size:24px;margin:6px 0 10px}
 .comic{width:100%;height:auto;display:block}
 .ask{margin:16px 0 8px;font-size:20px;text-align:center}
-.row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
-.cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+.row{display:flex;flex-wrap:wrap;justify-content:center;gap:16px 8px;padding-top:12px}
+.cell{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px}
 .cell small{font-size:14px;opacity:.75;min-height:20px}
 .box{width:58px;height:58px;border:3px solid var(--line);border-radius:12px;display:grid;place-items:center;font:26px Jua,sans-serif;background:#fff;color:#222}
 button.box{cursor:pointer;background:var(--soft);color:var(--ink);border-style:dashed}
@@ -56,8 +56,15 @@ button.box{cursor:pointer;background:var(--soft);color:var(--ink);border-style:d
 .go:disabled{opacity:.45;cursor:default}
 button:focus-visible{outline:4px solid var(--blue);outline-offset:2px}
 .hint{display:none;margin:14px auto 0;max-width:560px;background:#fff;color:#222;border:3px solid var(--line);border-radius:16px;padding:10px 14px;font-size:18px}
-.hint.show{display:block}
-.hint::before{content:"힌트";background:var(--blue);color:#fff;border-radius:8px;padding:0 8px;margin-right:8px;font-size:15px}
+.hint.show{display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;align-items:start;animation:pop .3s}
+.hint svg{width:54px;height:48px}
+.hint b{color:#c2410c;font-weight:400}
+.hint .fbh{display:block;color:var(--blue);font-size:19px;margin-bottom:2px}
+.fb2{display:block;margin-top:6px;padding-top:6px;border-top:2px dashed #ddd;font-size:17px}
+.df{position:absolute;left:-4px;top:-13px;transform:translateX(-50%);font-size:14px;line-height:20px;color:#fff;background:var(--blue);border-radius:999px;padding:0 7px;z-index:1;white-space:nowrap}
+.df.q{background:var(--red)}
+.box.cyc{background:#e6dcff!important;border-color:#7c3aed!important}
+@keyframes pop{from{transform:scale(.96);opacity:.4}}
 .yay{display:none;text-align:center;margin-top:16px;font-size:26px;color:var(--green)}
 .yay.show{display:block}
 .alt{font-size:19px;color:var(--ink);margin-top:4px}
@@ -348,7 +355,7 @@ function menu(){
   return `<button class="st" type="button" data-s="${k}"><svg viewBox="0 0 84 96" aria-hidden="true"><circle cx="42" cy="52" r="38" fill="${['#ffd84d','#ffc2a8','#bfe6ff','#d6e8fa','#e6dcff'][k]}" stroke="#222" stroke-width="3"/>${ic}</svg><span><h2>${k+1}단계 · ${s.name}</h2><p>${s.desc}</p><span class="stars">${'★'.repeat(n)}${'☆'.repeat(8-n)}</span></span></button>`}).join('');
 }
 function build(){
- const st=STAGES[si],spec=st.list[pi],q=st.T(spec);q.ty=spec.ty;
+ const st=STAGES[si],spec=st.list[pi],q=st.T(spec);q.ty=spec.ty;q.pat=spec.pat;q.tries=0;q.showDiff=false;
  const n=q.seq.length;q.blank=q.blank||(spec.blank)||[n-5,n-3,n-1];
  if(q.ty==='B'){
   const ans=q.blank.map(k=>q.seq[k]),others=new Set(q.seq.filter((_,k)=>!q.blank.includes(k)));let pool=new Set(ans);
@@ -388,9 +395,13 @@ function load(){
 function dots(){$('dots').innerHTML=STAGES[si].list.map((_,k)=>`<i class="${k===pi?'on':done[si+'-'+k]?'done':''}"></i>`).join('')}
 function draw(){
  const q=cur,A=q.ty==='A';
+ const known=k=>A||!q.blank.includes(k)||(vals[k]&&vals[k].st==='ok');
+ const L=q.rep&&q.pat?q.pat.length:0,cyc=k=>q.showDiff&&L&&k<L?' cyc':'';
  $('row').innerHTML=q.seq.map((n,k)=>{const lab=q.lab.length?`<small>${q.lab[k]}</small>`:'';
-  if(A||!q.blank.includes(k))return `<div class="cell"><div class="box">${n}</div>${lab}</div>`;
-  const v=vals[k]||{};return `<div class="cell"><button type="button" class="box ${v.st||''} ${sel===k&&!solved?'sel':''}" data-k="${k}" aria-label="빈칸">${v.v??''}</button>${lab}</div>`}).join('');
+  let df='';if(q.showDiff&&!L&&k>0&&known(k)&&known(k-1)){const d=n-q.seq[k-1];df=`<span class="df">${d>0?'+':'−'}${Math.abs(d)}</span>`}
+  if(!A&&q.blank.includes(k)&&q.showDiff&&!L&&k>0&&known(k-1)&&!known(k))df=`<span class="df q">?</span>`;
+  if(A||!q.blank.includes(k))return `<div class="cell">${df}<div class="box${cyc(k)}">${n}</div>${lab}</div>`;
+  const v=vals[k]||{};return `<div class="cell">${df}<button type="button" class="box ${v.st||''} ${sel===k&&!solved?'sel':''}${cyc(k)}" data-k="${k}" aria-label="빈칸">${v.v??''}</button>${lab}</div>`}).join('');
  if(A){
   const sl=k=>{const v=vals[k]||{};return `<button type="button" class="slot ${v.st||''} ${sel===k&&!solved?'sel':''}" data-k="${k}"><small>${q.slots[k]}</small>${v.v??''}</button>`};
   $('sent').innerHTML=q.rep?q.slots.map((_,k)=>sl(k)+(k<q.slots.length-1?'<span>,</span>':'')).join('')+'<span>순서로 되풀이되는 규칙</span>'
@@ -407,6 +418,54 @@ function pick(v){
  const nx=keys.find(k=>!vals[k]||vals[k].st==='bad');sel=nx===undefined?sel:nx;
  draw();
 }
+/* ---------- 틀린 답에 맞춘 피드백 ---------- */
+const J=(v,a,b)=>{const n=+v;if(!Number.isFinite(n))return b;const d=n%10;const bat=d===0?true:[1,3,6,7,8].includes(d);return bat?a:b};
+const NB={오른:1,왼:-1,아래:10,위:-10};
+const nbr=(v,dir)=>{const x=v+NB[dir];if(x<1||x>100)return null;if(Math.abs(NB[dir])===1&&Math.floor((x-1)/10)!==Math.floor((v-1)/10))return null;return x};
+const STEP=(a,up)=>a===1?`하나씩 ${up?'세어':'거꾸로 세어'} 보세요.`:a===2?`${up?'':'거꾸로 '}두 칸씩 뛰어 세어 보세요.`:a===5?`5씩 뛰어 세기(5, 10, 15, 20 …)를 떠올려 보세요.`:a===10?`십의 자리 숫자를 1 ${up?'크게':'작게'} 바꾸고, 일의 자리 숫자는 그대로 두면 돼요.`:'';
+function fbB(k){
+ const q=cur,g=+vals[k].v,t=q.tries;
+ if(q.rep){const L=q.pat.length;
+  if(t<2)return `<b>${g}</b>개를 골랐네요. 맨 앞부터 ${L}칸씩 손가락으로 묶어 보세요. 같은 묶음이 다시 나오나요?`;
+  return `도토리 수는 <b>${q.pat.join(', ')}</b> 순서로 되풀이돼요. 색칠한 첫 묶음을 보고, 이 칸이 묶음에서 몇 번째 자리인지 세어 보세요.`}
+ let j=k-1;while(j>0&&!(!q.blank.includes(j)||(vals[j]&&vals[j].st==='ok')))j--;
+ const pv=q.seq[j],c=q.seq[k],diff=g-pv,a=Math.abs(q.d),up=q.d>0,n=k-j;
+ let m;
+ if(g===pv)m=`앞의 수 <b>${pv}</b>${J(pv,'과','와')} 같은 수를 골랐어요. 이 수 줄은 오른쪽으로 갈수록 수가 ${up?'커져요':'작아져요'}.`;
+ else if(Math.sign(diff)!==Math.sign(q.d))m=`<b>${g}</b>${J(g,'은','는')} 앞의 수 ${pv}보다 ${diff>0?'커요':'작아요'}. 그런데 이 수 줄은 오른쪽으로 갈수록 수가 <b>${up?'커져요':'작아져요'}</b>.`;
+ else if(n===1&&Math.abs(diff)!==a)m=`${pv}에서 <b>${g}</b>까지는 ${Math.abs(diff)}만큼 ${up?'커졌어요':'작아졌어요'}. 다른 이웃한 두 수는 얼마씩 변하는지 비교해 보세요.`;
+ else if(Math.abs(g-c)===1)m=`아까워요! <b>${g}</b>${J(g,'은','는')} 답과 1 차이예요. ${pv}에서부터 다시 차근차근 세어 보세요.`;
+ else m=`${pv} 다음에 오는 수들을 순서대로 세어 보세요.`;
+ if(t>=2)m+=`<span class="fb2">이웃한 수 사이에 얼마씩 변하는지 적어 두었어요. ${pv}에서 ${a}씩 ${up?'커지게':'작아지게'} ${n>1?n+'번 ':''}가 보세요. ${STEP(a,up)}</span>`;
+ return m;
+}
+function fbA(bad,got,t){
+ const q=cur,seq=q.seq,n=seq.length,k=bad[0];
+ if(q.rep){const pat=q.pat.map(String),L=pat.length;
+  const rot=got.length===L&&got.join()!==pat.join()&&[...Array(L).keys()].some(r=>pat.map((_,i)=>pat[(i+r)%L]).join()===got.join());
+  if(rot)return `되풀이되는 묶음은 잘 찾았어요! 그런데 규칙은 <b>맨 앞의 수부터</b> 차례대로 말해요. 수 줄의 맨 앞 수부터 다시 읽어 보세요.`;
+  return `맨 앞부터 <b>${seq.slice(0,L*2).join(', ')}</b>${J(seq[L*2-1],'을','를')} 소리 내어 읽어 보세요. 같은 수들이 묶음으로 다시 나오는 곳은 어디인가요?`+(q.tries>=2?`<span class="fb2">한 묶음은 ${L}개예요. 색칠한 칸을 보세요.</span>`:'');
+ }
+ const useB=t===q.ans[1],start=+t[0],dir=t[1],upV=t[3]==='커지는';
+ const next=useB?seq[n-2]:seq[1],list=(useB?[...seq].reverse():seq).slice(0,3).join(' → ');
+ const g=got[k];let m;
+ if(k===0){
+  if(!seq.map(String).includes(g))m=`<b>${g}</b>${J(g,'은','는')} 수 줄에 없는 수예요. 규칙은 수 줄의 <b>맨 앞 수</b>나 <b>맨 끝 수</b>에서 시작해서 말해요.`;
+  else if(g===String(Math.abs(q.d)))m=`<b>${g}</b>${J(g,'은','는')} '몇씩' 변하는지 나타내는 수예요. '부터' 앞에는 규칙을 시작하는 수, 곧 맨 앞 수나 맨 끝 수가 들어가요.`;
+  else m=`<b>${g}</b>${J(g,'은','는')} 수 줄의 가운데에 있는 수예요. 규칙을 바르게 말하려면 <b>맨 앞 수</b>나 <b>맨 끝 수</b>에서 시작해요.`;
+ }else if(k===1){
+  if(q.grid){const x=nbr(start,g);m=`사물함 표에서 ${start}에서 <b>${g}쪽</b>으로 한 칸 가면 ${x?`<b>${x}</b>번이 나와요`:'더 갈 사물함이 없어요'}. 수 줄에서 ${start} 다음 수는 <b>${next}</b>${J(next,'이에요','예요')}. ${next}${J(next,'은','는')} ${start}의 어느 쪽에 있나요?`}
+  else if(!useB)m=`맨 왼쪽 수 <b>${start}</b>에서는 왼쪽으로 더 갈 수 없어요. ${start} 다음 수 ${next}${J(next,'은','는')} 어느 쪽에 있나요?`;
+  else m=`맨 오른쪽 수 <b>${start}</b>에서는 오른쪽으로 더 갈 수 없어요. ${start} 다음 수 ${next}${J(next,'은','는')} 어느 쪽에 있나요?`;
+ }else if(k===2){
+  const gv=+g,alt=upV?start+gv:start-gv;
+  m=`${start}에서 ${next}까지 얼마만큼 변했는지 세어 보세요. <b>${g}씩</b> ${upV?'커진다면':'작아진다면'} ${start} 다음 수는 ${alt>0?alt+J(alt,'이','가'):'0보다 작은 수가'} 되어야 해요.`;
+ }else{
+  m=`${start}에서 ${dir}쪽으로 가며 읽어 보세요: <b>${list}</b>. 수가 커지나요, 작아지나요?`;
+ }
+ if(bad.length>1)m+=`<span class="fb2">빨간 칸이 ${bad.length}개예요. 하나씩 고쳐 보세요.</span>`;
+ return m;
+}
 function check(){
  const q=cur;let bad=[];
  let got,want;
@@ -417,19 +476,20 @@ function check(){
  logTry(!bad.length,got,want,bad);
  if(!bad.length)return win();
  if(q.ty==='B')bad=bad.map(j=>q.blank[j]);
+ q.tries++;if(q.tries>=2)q.showDiff=true;
  beep(200,.25);sel=bad[0];draw();
- let h=q.hintB;
- if(q.ty==='A')h=q.rep?q.hintA:["규칙을 말할 때는 어느 수부터 보는지 먼저 말해요. 맨 앞의 수나 맨 끝의 수를 찾아보세요.",
-   "기준이 되는 수에서 어느 쪽으로 가면서 수가 변하나요? 손가락으로 짚어 보세요.",
-   "이웃한 두 수의 차이를 세어 보세요.","그 방향으로 갈수록 수가 커지나요, 작아지나요?"][bad[0]];
- $('hint').textContent=h;$('hint').classList.add('show');
+ const msg=q.ty==='B'?fbB(bad[0]):fbA(bad,got,want);
+ const head=['다시 생각해 봐요','같이 찾아볼까요?','거의 다 왔어요!'][Math.min(q.tries-1,2)];
+ $('hint').innerHTML=`<svg viewBox="-34 -56 68 60" aria-hidden="true"><use href="#fg"/></svg><div><b class="fbh">${head}</b>${msg}</div>`;
+ $('hint').classList.remove('show');void $('hint').offsetWidth;$('hint').classList.add('show');
+ setTimeout(()=>$('hint').scrollIntoView({behavior:'smooth',block:'nearest'}),60);
 }
 function win(){
  solved=true;done[si+'-'+pi]=1;save();draw();dots();
  $('go').hidden=true;$('hint').classList.remove('show');confetti();beep(660);setTimeout(()=>beep(880),120);setTimeout(()=>beep(1046,.3),240);
  const last=pi===STAGES[si].list.length-1;let alt='';
  if(cur.ty==='A'&&cur.ans.length>1){const o=cur.ans[cur.used===cur.ans[0]?1:0];alt=`<div class="alt">"${o[0]}부터 ${o[1]}쪽으로 ${o[2]}씩 ${o[3]} 규칙"이라고 말해도 맞아요!</div>`}
- $('yay').innerHTML=(last?`${si+1}단계를 모두 풀었어요! 멋진 탐정이에요!`:'정답! 규칙을 찾았어요!')+alt+
+ $('yay').innerHTML=(last?`${si+1}단계를 모두 풀었어요! 멋진 탐정이에요!`:cur.tries?'포기하지 않고 찾아냈어요! 정답!':'정답! 규칙을 찾았어요!')+alt+
   `<button class="go" id="next" type="button" style="background:var(--green)">${last?(si<STAGES.length-1?'다음 단계로':'처음 화면으로'):'다음 문제'}</button>`;
  $('yay').classList.add('show');setTimeout(()=>$('yay').scrollIntoView({behavior:'smooth',block:'center'}),50);
 }
